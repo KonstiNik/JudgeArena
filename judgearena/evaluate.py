@@ -29,9 +29,9 @@ logger = get_logger(__name__)
 
 
 class PairScore:
-    def __init__(self):
+    def __init__(self, temperature: float = 0.3):
         super(PairScore).__init__()
-        self.temperature = 0.3
+        self.temperature = temperature
 
     def preference_from_scores(self, score_a: float, score_b: float) -> float:
         return 1 - np.exp(self.temperature * score_a) / (
