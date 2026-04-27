@@ -4,6 +4,9 @@ from judgearena.instruction_dataset.arena_hard import (
     download_arena_hard,
     is_arena_hard_dataset,
 )
+from judgearena.log import get_logger
+
+logger = get_logger(__name__)
 
 
 def load_instructions(dataset: str, n_instructions: int | None = None) -> pd.DataFrame:
@@ -46,7 +49,9 @@ def load_instructions(dataset: str, n_instructions: int | None = None) -> pd.Dat
                 "zh",
                 "EU",
             ]
-        print(f"Loading m-arena-hard with language specification set to {language}")
+        logger.info(
+            "Loading m-arena-hard with language specification set to %s", language
+        )
         from judgearena.instruction_dataset.m_arenahard import load_m_arenahard
 
         df_instructions = load_m_arenahard(local_path=data_root, language=language)
@@ -76,7 +81,7 @@ def load_instructions(dataset: str, n_instructions: int | None = None) -> pd.Dat
         df_instructions = read_df(local_path_tables / "instructions" / f"{dataset}.csv")
 
     df_instructions = df_instructions.set_index("instruction_index").sort_index()
-    print(f"Loaded {len(df_instructions)} instructions for {dataset}.")
+    logger.info("Loaded %d instructions for %s.", len(df_instructions), dataset)
     if n_instructions is None:
         n_instructions = len(df_instructions)
     return df_instructions.head(n_instructions)
