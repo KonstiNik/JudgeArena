@@ -459,11 +459,14 @@ def main(args: CliEloArgs | None = None) -> dict:
         for i in range(n)
     ]
 
-    judge_extra_kwargs = {}
+    judge_extra_kwargs = dict(args.engine_kwargs)
     if args.max_model_len is not None:
         judge_extra_kwargs["max_model_len"] = args.max_model_len
     if args.chat_template is not None:
         judge_extra_kwargs["chat_template"] = args.chat_template
+    # Disable thinking/reasoning for the judge model — it should produce
+    # scores directly, not reasoning chains that consume the output budget.
+    judge_extra_kwargs["chat_template_kwargs"] = {"enable_thinking": False}
 
     def run_judge() -> pd.DataFrame:
         judge_chat_model = make_model(
@@ -471,7 +474,7 @@ def main(args: CliEloArgs | None = None) -> dict:
             max_tokens=args.max_out_tokens_judge,
             **judge_extra_kwargs,
         )
-        annotations, _, prefs = judge_and_parse_prefs(
+        annotations, annotations_reversed, prefs = judge_and_parse_prefs(
             judge_chat_model=judge_chat_model,
             instructions=instructions.tolist(),
             completions_A=completions_A,
@@ -481,16 +484,30 @@ def main(args: CliEloArgs | None = None) -> dict:
             truncate_input_chars=args.truncate_all_input_chars,
             use_tqdm=use_tqdm,
         )
+        # When swap_mode="both", prefs is 2N (original + reversed). Align
+        # all other arrays to match: duplicate annotations and position arrays,
+        # flipping our_model_is_position_a for the swapped batch.
+        all_annotations = list(annotations)
+        pos_a = use_model_a_as_opponent
+        pos_ours = our_model_is_position_a
+        opp = opponent_models
+        if annotations_reversed is not None:
+            all_annotations += list(annotations_reversed)
+            pos_a = np.tile(use_model_a_as_opponent, 2)
+            pos_ours = np.concatenate([
+                our_model_is_position_a, ~our_model_is_position_a
+            ])
+            opp = opponent_models + opponent_models
         return pd.DataFrame(
             {
-                "judge_completion": [a.judge_completion for a in annotations],
-                "instruction": [a.instruction for a in annotations],
-                "completion_A": [a.completion_A for a in annotations],
-                "completion_B": [a.completion_B for a in annotations],
+                "judge_completion": [a.judge_completion for a in all_annotations],
+                "instruction": [a.instruction for a in all_annotations],
+                "completion_A": [a.completion_A for a in all_annotations],
+                "completion_B": [a.completion_B for a in all_annotations],
                 "pref": prefs,
-                "use_model_a_as_opponent": use_model_a_as_opponent,
-                "our_model_is_position_a": our_model_is_position_a,
-                "opponent_model": opponent_models,
+                "use_model_a_as_opponent": pos_a,
+                "our_model_is_position_a": pos_ours,
+                "opponent_model": opp,
             }
         )
 

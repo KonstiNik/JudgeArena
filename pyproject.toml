@@ -81,5 +81,10 @@ quote-style = "double"
 indent-style = "space"
 
 [project.optional-dependencies]
+# vllm 0.10.2 is the newest version with manylinux1 wheels (glibc 2.5).
+# vllm 0.17+ requires manylinux_2_31 (glibc 2.31), incompatible with Leonardo (RHEL 8, glibc 2.28).
+# The prebuilt 0.10.2 wheel ships CUDA 12.8 kernels; Leonardo has CUDA 12.2 (driver 535).
+# MoE models (Qwen3-30B-A3B) crash with missing _moe_C.topk_softmax due to this mismatch.
+# Workaround: use a dense judge model, or build vllm from source on a compute node.
 vllm = ["vllm==0.10.2", "transformers>=4.55.2,<5.0.0"]
 llamacpp = ["llama-cpp-python>=0.3.0"]

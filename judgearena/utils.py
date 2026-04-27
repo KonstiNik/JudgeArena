@@ -204,6 +204,7 @@ class ChatVLLM:
         model: str,
         max_tokens: int = 8192,
         chat_template: str | None = None,
+        chat_template_kwargs: dict | None = None,
         **vllm_kwargs,
     ):
         from vllm import LLM, SamplingParams
@@ -242,6 +243,8 @@ class ChatVLLM:
             temperature=0.6,
             top_p=0.95,
         )
+
+        self.chat_template_kwargs = chat_template_kwargs
 
         # Resolve chat template:
         # 1. Explicit override always wins → use chat() with that template
@@ -329,11 +332,15 @@ class ChatVLLM:
             outputs = self.llm.generate(prompts, self.sampling_params)
         else:
             messages_batch = [self._to_messages(inp) for inp in inputs]
+            chat_kwargs = {}
+            if self.chat_template_kwargs:
+                chat_kwargs["chat_template_kwargs"] = self.chat_template_kwargs
             outputs = self.llm.chat(
                 messages_batch,
                 self.sampling_params,
                 add_generation_prompt=True,
                 chat_template=self.chat_template,
+                **chat_kwargs,
             )
         return [out.outputs[0].text for out in outputs]
 

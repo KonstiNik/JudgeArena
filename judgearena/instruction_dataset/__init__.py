@@ -4,11 +4,10 @@ from judgearena.instruction_dataset.arena_hard import (
     download_arena_hard,
     is_arena_hard_dataset,
 )
-from judgearena.instruction_dataset.m_arenahard import load_m_arenahard
-from judgearena.utils import data_root, download_hf, read_df
 
 
 def load_instructions(dataset: str, n_instructions: int | None = None) -> pd.DataFrame:
+    from judgearena.utils import data_root, download_hf, read_df
     if dataset == "mt-bench":
         from judgearena.instruction_dataset.mt_bench import load_mt_bench
 
@@ -48,6 +47,8 @@ def load_instructions(dataset: str, n_instructions: int | None = None) -> pd.Dat
                 "EU",
             ]
         print(f"Loading m-arena-hard with language specification set to {language}")
+        from judgearena.instruction_dataset.m_arenahard import load_m_arenahard
+
         df_instructions = load_m_arenahard(local_path=data_root, language=language)
 
         # sort by question_id, then language so that we get multiple languages if we truncate
