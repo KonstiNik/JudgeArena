@@ -404,7 +404,11 @@ def main(args: CliEloArgs) -> dict:
             }
         )
 
-    judge_cache_suffix = f"judge_{cache_suffix}"
+    # Include judge model in the judge cache key so swapping judges (e.g.
+    # Qwen3.5-27B-FP8 → gemma-4-26b-a4b-it) does not silently reuse the prior
+    # judge's verdicts. Completion cache (above) stays judge-independent since
+    # the candidate model's outputs don't depend on the judge.
+    judge_cache_suffix = f"judge_{replace_slash(args.judge_model)}_{cache_suffix}"
     df_judge = cache_function_dataframe(
         run_judge,
         ignore_cache=args.ignore_cache,
