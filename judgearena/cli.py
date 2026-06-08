@@ -113,6 +113,25 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help="[elo] Model anchored at 1000 ELO (ratings are reported relative to it).",
     )
+    parser.add_argument(
+        "--soft-elo",
+        action="store_true",
+        help="[elo] Use continuous judge preferences as soft labels for BT fitting "
+        "instead of discretising to hard win/loss/tie.",
+    )
+    parser.add_argument(
+        "--calibrate-temperature",
+        action="store_true",
+        help="[elo] Calibrate the PairScore temperature against human-annotated "
+        "arena battles before running soft-ELO. Requires --soft-elo.",
+    )
+    parser.add_argument(
+        "--calibration-size",
+        type=int,
+        default=None,
+        help="[elo] Number of human arena battles to sample for temperature calibration. "
+        "Defaults to all available battles. Requires --calibrate-temperature.",
+    )
     add_common_arguments(parser)
     return parser
 
@@ -191,6 +210,9 @@ def _build_elo_args(
         n_bootstraps=args.n_bootstraps,
         seed=args.seed,
         baseline_model=args.baseline_model,
+        soft_elo=args.soft_elo,
+        calibrate_temperature=args.calibrate_temperature,
+        calibration_size=args.calibration_size,
         judge_model=args.judge_model,
         n_instructions=args.n_instructions,
         provide_explanation=args.provide_explanation,
