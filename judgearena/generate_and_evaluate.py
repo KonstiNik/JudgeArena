@@ -130,7 +130,17 @@ def main(args: CliArgs):
 
     # Build the result folder early so the file handler captures the entire run.
     # Include a timestamp so each run gets its own unique directory.
-    name = f"{args.task}-{args.model_A}-{args.model_B}-{args.judge_model}"
+    # Use basenames in the folder name so that absolute filesystem paths in
+    # model ids (common for local fine-tuned checkpoints) don't push the
+    # directory name past Linux's 255-byte NAME_MAX. The full ids are still
+    # recorded in the annotations CSV (model_A/model_B columns) and args JSON.
+    def _short(s: str | None) -> str:
+        return s.rsplit("/", 1)[-1] if s else ""
+
+    name = (
+        f"{args.task}-{_short(args.model_A)}-{_short(args.model_B)}"
+        f"-{_short(args.judge_model)}"
+    )
     name += f"-{args.swap_mode}"
     name = name.replace("/", "_")
     run_ts = run_started_at.strftime("%Y%m%d_%H%M%S")
